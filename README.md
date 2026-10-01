@@ -45,8 +45,34 @@ Chỉ dùng runner này cho repository và workflow đáng tin cậy; không cho
 từ pull request không tin cậy truy cập runner. Compose mount socket ở chế độ
 read-write vì build cần điều khiển daemon.
 
+## Bài 2: Multi-stage build cho cart-service
+
+`Dockerfile` dùng JDK 17 ở stage `builder` để chạy `./gradlew bootJar`, sau đó
+chỉ chuyển executable JAR sang stage `runtime` dùng JRE 17. Nhờ vậy image cuối
+không chứa JDK, Gradle cache hay mã nguồn thô. Lệnh `COPY --from=builder` lấy
+artifact từ stage build; `*-plain.jar` được loại khỏi lựa chọn vì không phải
+executable Spring Boot JAR.
+
+Đặt Dockerfile cùng thư mục với `gradlew`, `settings.gradle[.kts]` và mã nguồn
+`cart-service`, rồi chạy trên máy có Docker:
+
+```sh
+docker build --target builder -t cart-service:builder .
+docker build --target runtime -t cart-service:runtime .
+docker image ls cart-service --format 'table {{.Repository}}:{{.Tag}}\t{{.Size}}'
+```
+
+So sánh size của `builder` và `runtime` trong kết quả. Size thực tế tùy thuộc
+ứng dụng và nền tảng nên cần đo trên chính máy build; workspace bài tập hiện
+chưa có source Gradle/`gradlew`, vì vậy chưa thể tạo image `cart-service` hay
+báo số MB trung thực ở đây.
+
+Workflow DooD của Bài 1 tiếp tục dùng `Dockerfile.dood` riêng, không phụ thuộc
+source Gradle và không bị ảnh hưởng bởi Dockerfile multi-stage.
+
 ## Tài liệu tham khảo
 
 - [Docker: Bind mounts](https://docs.docker.com/engine/storage/bind-mounts/)
+- [Docker: Multi-stage builds](https://docs.docker.com/build/building/multi-stage/)
 - [GitHub: Self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners)
 - [Runner image documentation](https://github.com/myoung34/docker-github-actions-runner)
