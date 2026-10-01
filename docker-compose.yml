@@ -1,0 +1,26 @@
+services:
+  runner:
+    image: myoung34/github-runner:latest
+    container_name: quickbite-dood-runner
+    restart: unless-stopped
+    environment:
+      RUNNER_SCOPE: repo
+      REPO_URL: ${REPO_URL:?Set REPO_URL in .env}
+      ACCESS_TOKEN: ${ACCESS_TOKEN:?Set ACCESS_TOKEN in .env}
+      RUNNER_NAME: quickbite-dood-runner
+      LABELS: dood
+      RUNNER_WORKDIR: /_work
+      RUN_AS_ROOT: "true"
+      UNSET_CONFIG_VARS: "true"
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind:
+          create_host_path: false
+      - type: volume
+        source: runner-work
+        target: /_work
+
+volumes:
+  runner-work:
