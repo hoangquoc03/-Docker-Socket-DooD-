@@ -47,7 +47,7 @@ read-write vì build cần điều khiển daemon.
 
 ## Bài 2: Multi-stage build cho cart-service
 
-`Dockerfile` dùng JDK 17 ở stage `builder` để chạy `./gradlew bootJar`, sau đó
+`Dockerfile.cart-service` dùng JDK 17 ở stage `builder` để chạy `./gradlew bootJar`, sau đó
 chỉ chuyển executable JAR sang stage `runtime` dùng JRE 17. Nhờ vậy image cuối
 không chứa JDK, Gradle cache hay mã nguồn thô. Lệnh `COPY --from=builder` lấy
 artifact từ stage build; `*-plain.jar` được loại khỏi lựa chọn vì không phải
@@ -57,8 +57,8 @@ executable Spring Boot JAR.
 `cart-service`, rồi chạy trên máy có Docker:
 
 ```sh
-docker build --target builder -t cart-service:builder .
-docker build --target runtime -t cart-service:runtime .
+docker build --file Dockerfile.cart-service --target builder -t cart-service:builder .
+docker build --file Dockerfile.cart-service --target runtime -t cart-service:runtime .
 docker image ls cart-service --format 'table {{.Repository}}:{{.Tag}}\t{{.Size}}'
 ```
 
@@ -69,6 +69,23 @@ báo số MB trung thực ở đây.
 
 Workflow DooD của Bài 1 tiếp tục dùng `Dockerfile.dood` riêng, không phụ thuộc
 source Gradle và không bị ảnh hưởng bởi Dockerfile multi-stage.
+
+## Bài 6: Build, push và verify delivery-service
+
+`Dockerfile` build Java 17 ở stage JDK, sau đó chỉ đưa bytecode vào stage JRE
+17 chạy bằng user không phải root. Service mẫu cung cấp endpoint `/health` để
+workflow kiểm tra container sau khi pull image từ GHCR.
+
+Workflow `.github/workflows/main.yml` chạy tuần tự trên mỗi push: checkout,
+chuẩn hóa owner thành chữ thường, build image, đăng nhập GHCR bằng
+`GITHUB_TOKEN`, push tag commit SHA và `latest`, pull lại tag SHA, rồi chạy
+container detached và chờ `/health` trả `200 OK`. Quyền `packages: write` cấp
+đủ quyền publish; không cần PAT cá nhân.
+
+Sau khi push workflow, xem **Actions → Build, push, and verify delivery-service**.
+Image được đăng dưới `ghcr.io/<owner-lowercase>/delivery-service`, với tag commit
+SHA và `latest`. Nếu package private không cho workflow truy cập, bật quyền
+Actions cho repository trong **Package settings → Manage Actions access**.
 
 ## Bài 3: Build và push payment-service lên GHCR
 
