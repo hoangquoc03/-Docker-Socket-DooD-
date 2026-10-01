@@ -70,6 +70,40 @@ báo số MB trung thực ở đây.
 Workflow DooD của Bài 1 tiếp tục dùng `Dockerfile.dood` riêng, không phụ thuộc
 source Gradle và không bị ảnh hưởng bởi Dockerfile multi-stage.
 
+## Bài 3: Build và push payment-service lên GHCR
+
+GHCR image dùng tên dạng `ghcr.io/<github-username-lowercase>/payment-service:1.0.0`.
+Tạo **Personal access token (classic)** tại **GitHub → Settings → Developer
+settings → Personal access tokens → Tokens (classic)** và chỉ cấp `write:packages`
+để push. Chỉ thêm `read:packages` nếu cần pull package private; không cấp
+`delete:packages` cho bài này. Nếu tài khoản bật SSO, authorize token cho SSO.
+Không nhập mật khẩu GitHub hoặc ghi PAT trực tiếp vào lệnh/script.
+
+Đặt mã nguồn và Dockerfile thật của `payment-service` trong workspace. Từ Git
+Bash/WSL, chạy script; PAT được hỏi ẩn và truyền qua `--password-stdin`:
+
+```sh
+bash scripts/publish-payment-service.sh payment-service/Dockerfile payment-service
+```
+
+Script dừng nếu Dockerfile hoặc build context không tồn tại. Khi build/push xong,
+xác minh tag local và mở **GitHub profile → Packages**:
+
+```sh
+docker image inspect ghcr.io/your-lowercase-username/payment-service:1.0.0
+```
+
+Thay đường dẫn mẫu bằng username GitHub viết thường của bạn. Workspace bài tập
+hiện chưa có source/Dockerfile `payment-service` và mình không có PAT của bạn,
+nên chưa thể thực hiện publish thật hoặc xác nhận package đã hiện trên profile.
+
+Tài liệu tham khảo:
+
+- [GitHub: Working with the Container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+- [Docker: `docker login`](https://docs.docker.com/reference/cli/docker/login/)
+- [Docker: `docker image tag`](https://docs.docker.com/reference/cli/docker/image/tag/)
+- [Docker: `docker image push`](https://docs.docker.com/reference/cli/docker/image/push/)
+
 ## Tài liệu tham khảo
 
 - [Docker: Bind mounts](https://docs.docker.com/engine/storage/bind-mounts/)
