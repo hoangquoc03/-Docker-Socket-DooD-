@@ -1,0 +1,48 @@
+name: Pull and verify GHCR image
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  verify-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Normalize image reference
+        id: image
+        env:
+          GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/payment-service:1.0.0
+        run: |
+          image="$(printf '%s' "$GHCR_IMAGE" | tr '[:upper:]' '[:lower:]')"
+          echo "ref=$image" >> "$GITHUB_OUTPUT"
+
+      - name: Pull payment-service image
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
+        run: docker pull "$IMAGE"
+
+      - name: Start verification container
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
+        run: |
+          container_id="$(docker run --detach --name payment-service-verify --publish 8080:8080 "$IMAGE")"
+          if [[ "$(docker inspect --format '{{.State.Running}}' "$container_id")" != "true" ]]; then
+            docker logs "$container_id"
+            exit 1
+          fi
+          docker ps --filter "id=$container_id" --format '{{.Names}} {{.Status}}'
+
+      - name: Remove verification container
+        if: always()
+        run: docker rm --force payment-service-verify 2>/dev/null || true

@@ -104,6 +104,21 @@ Tài liệu tham khảo:
 - [Docker: `docker image tag`](https://docs.docker.com/reference/cli/docker/image/tag/)
 - [Docker: `docker image push`](https://docs.docker.com/reference/cli/docker/image/push/)
 
+## Bài 4: Pull và verify image trong GitHub Actions
+
+Workflow `.github/workflows/ci.yml` đăng nhập bằng actor hiện tại và
+`secrets.GITHUB_TOKEN`, chỉ cấp `packages: read`, chuyển toàn bộ image reference
+sang chữ thường, pull `payment-service:1.0.0`, rồi chạy container detached để
+xác nhận container còn ở trạng thái running. Workflow chỉ pull image, không
+build lại source.
+
+Đảm bảo package `payment-service` đã được push theo đúng owner hiện tại và tag
+`1.0.0`. Nếu pull trả về `denied`, vào trang package trên GHCR → **Package
+settings → Manage Actions access**, cấp repository này quyền **Read**. Sau đó
+push commit hoặc chọn **Actions → Pull and verify GHCR image → Run workflow**.
+Thời gian thực tế phụ thuộc kích thước image và cache/network của runner; lần
+pull đầu tiên không được đảm bảo dưới 20 giây.
+
 ## Tài liệu tham khảo
 
 - [Docker: Bind mounts](https://docs.docker.com/engine/storage/bind-mounts/)
